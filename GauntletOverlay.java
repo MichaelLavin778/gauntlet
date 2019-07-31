@@ -1,266 +1,343 @@
 /*
- * THIS SOFTWARE WRITTEN BY A KEYBOARD-WIELDING MONKEY BOI
- * No rights reserved. Use, redistribute, and modify at your own discretion,
- * and in accordance with Yagex and RuneLite guidelines.
- * However, aforementioned monkey would prefer if you don't sell this plugin for profit.
- * Good luck on your raids!
+ * Copyright (c) 2019, kThisIsCvpv <https://github.com/kThisIsCvpv>
+ * Copyright (c) 2019, ganom <https://github.com/Ganom>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package net.runelite.client.plugins.gauntlet;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import javax.inject.Inject;
 import net.runelite.api.Client;
-import net.runelite.api.GameObject;
+import net.runelite.api.Model;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.Projectile;
-import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.model.Jarvis;
+import net.runelite.api.model.Vertex;
+import net.runelite.client.graphics.ModelOutlineRenderer;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.OverlayUtil;
+import static net.runelite.client.util.ImageUtil.resizeImage;
 
-import javax.inject.Inject;
-import java.awt.*;
-import java.awt.image.BufferedImage;
+public class GauntletOverlay extends Overlay
+{
+	private static final int MAX_DISTANCE = 2400;
+	private final Client client;
+	private final GauntletPlugin plugin;
+	private final ModelOutlineRenderer outlineRenderer;
 
-public class GauntletOverlay extends Overlay {
+	@Inject
+	private GauntletOverlay(Client client, GauntletPlugin plugin, ModelOutlineRenderer outlineRenderer)
+	{
+		this.client = client;
+		this.plugin = plugin;
+		this.outlineRenderer = outlineRenderer;
 
-    private final Client client;
-    private final GauntletPlugin plugin;
-    private final GauntletConfig config;
+		setPosition(OverlayPosition.DYNAMIC);
+		setPriority(OverlayPriority.HIGH);
+		setLayer(OverlayLayer.ABOVE_SCENE);
+	}
 
-    private static final int MAX_DISTANCE = 2350;
+	@Override
+	public Dimension render(Graphics2D graphics)
+	{
+		// Save resources. There's nothing to render if the user is not in a raid.
+		if (!plugin.startedGauntlet())
+		{
+			return null;
+		}
 
-    @Inject
-    private GauntletOverlay(Client client, GauntletPlugin plugin, GauntletConfig config) {
-        this.client = client;
-        this.plugin = plugin;
-        this.config = config;
+		if (plugin.fightingBoss())
+		{
+			// This section handles the visuals when the player is in the boss room.
+			// This section handles the projectile overlays.
+			Set<Missiles> projectiles = plugin.getProjectiles();
+			projectiles.forEach(projectile ->
+			{
+				BufferedImage icon = resizeImage(projectile.getImage(), plugin.getIconSize(), plugin.getIconSize());
+				Color color = projectile.getColor();
 
-        setPosition(OverlayPosition.DYNAMIC);
-        setPriority(OverlayPriority.HIGH);
-        setLayer(OverlayLayer.ABOVE_SCENE);
-    }
+				if (icon == null)
+				{
+					return;
+				}
 
-    @Override
-    public Dimension render(Graphics2D graphics) {
-        // Save resources. There's nothing to render if the user is not in a raid.
-        if (!GauntletUtils.inRaid(client))
-            return null;
+				Polygon polygon = boundProjectile(projectile.getProjectile());
+				if (polygon == null)
+				{
+					int x = (int) projectile.getProjectile().getX();
+					int y = (int) projectile.getProjectile().getY();
 
-        if (GauntletUtils.inBoss(client)) { // This section handles the visuals when the player is in the boss room.
-            // This section handles the projectile overlays.
-            for (Projectile projectile : this.client.getProjectiles()) {
-                int id = projectile.getId();
+					LocalPoint point = new LocalPoint(x, y);
+					Point loc = Perspective.getCanvasImageLocation(client, point, icon, -(int) projectile.getProjectile().getZ());
 
-                BufferedImage icon = null;
-                Color color = null;
+					if (loc == null)
+					{
+						return;
+					}
 
-                if (GauntletUtils.arrayContainsInteger(GauntletUtils.PROJECTILE_MAGIC, id) && config.uniqueAttackVisual()) {
-                    icon = plugin.imageAttackMage;
-                    color = Color.CYAN;
-                } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.PROJECTILE_RANGE, id) && config.uniqueAttackVisual()) {
-                    icon = plugin.imageAttackRange;
-                    color = Color.GREEN;
-                } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.PROJECTILE_PRAYER, id) && config.uniquePrayerVisual()) {
-                    icon = plugin.imageAttackPrayer;
-                    color = Color.MAGENTA;
-                }
+					graphics.drawImage(icon, loc.getX(), loc.getY(), null);
+				}
+				else
+				{
+					graphics.setColor(color);
+					graphics.draw(polygon);
+					graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
+					graphics.fill(polygon);
 
-                if (icon == null)
-                    continue;
+					Rectangle bounds = polygon.getBounds();
+					int x = (int) bounds.getCenterX() - (icon.getWidth() / 2);
+					int y = (int) bounds.getCenterY() - (icon.getHeight() / 2);
+					graphics.drawImage(icon, x, y, null);
+				}
+			});
+			projectiles.removeIf(proj -> proj.getProjectile().getRemainingCycles() <= 0);
 
-                Polygon polygon = GauntletUtils.boundProjectile(client, projectile);
-                if (polygon == null) {
-                    int x = (int) projectile.getX();
-                    int y = (int) projectile.getY();
+			plugin.getTornado().forEach(tornado ->
+			{
+				if (plugin.isOverlayTornadoes())
+				{
+					String textOverlay = Integer.toString(plugin.getTornadoTicks());
+					Point textLoc = Perspective.getCanvasTextLocation(client, graphics, tornado.getLocalLocation(), textOverlay, 0);
 
-                    LocalPoint point = new LocalPoint(x, y);
-                    Point loc = Perspective.getCanvasImageLocation(client, point, icon, -(int) projectile.getZ());
+					if (textLoc == null)
+					{
+						return;
+					}
 
-                    if (loc == null)
-                        continue;
+					Font oldFont = graphics.getFont();
+					graphics.setFont(new Font("Arial", Font.BOLD, 20));
+					Point pointShadow = new Point(textLoc.getX() + 1, textLoc.getY() + 1);
+					OverlayUtil.renderTextLocation(graphics, pointShadow, textOverlay, Color.BLACK);
+					OverlayUtil.renderTextLocation(graphics, textLoc, textOverlay, Color.YELLOW);
+					graphics.setFont(oldFont);
+				}
+			});
 
-                    graphics.drawImage(icon, loc.getX(), loc.getY(), null);
-                } else {
-                    graphics.setColor(color);
-                    graphics.draw(polygon);
-                    graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
-                    graphics.fill(polygon);
+			if (plugin.getHunllef() != null)
+			{
+				final Hunllef hunllef = plugin.getHunllef();
+				final NPC boss = hunllef.getNpc();
+				final LocalPoint point = boss.getLocalLocation();
 
-                    Rectangle bounds = polygon.getBounds();
-                    int x = (int) bounds.getCenterX() - (icon.getWidth() / 2);
-                    int y = (int) bounds.getCenterY() - (icon.getHeight() / 2);
-                    graphics.drawImage(icon, x, y, null);
-                }
-            }
+				if (plugin.isOverlayBoss())
+				{
+					Polygon polygon = boss.getConvexHull();
 
-            for (NPC npc : this.client.getNpcs()) {
-                // Draws graphics on tornadoes.
-                if (config.overlayTornadoes() && plugin.tornadoesActive && GauntletUtils.isTornado(npc)) {
-                    String textOverlay = Integer.toString(plugin.tornadoTicks);
+					if (polygon == null)
+					{
+						return null;
+					}
 
-                    Point textLoc = Perspective.getCanvasTextLocation(client, graphics, npc.getLocalLocation(), textOverlay, 0);
+					Color color = hunllef.getCurrentPhase().getColor();
+					outlineRenderer.drawOutline(boss, 2, color);
+				}
 
-                    if (textLoc == null)
-                        continue;
+				if (plugin.isOverlayBossPrayer())
+				{
+					BufferedImage attackIcon = null;
 
-                    Font oldFont = graphics.getFont();
+					switch (hunllef.getCurrentPhase())
+					{
+						case MAGIC:
+							attackIcon = resizeImage(hunllef.getMage(), plugin.getIconSize(), plugin.getIconSize());
+							break;
+						case RANGE:
+							attackIcon = resizeImage(hunllef.getRange(), plugin.getIconSize(), plugin.getIconSize());
+							break;
+						default:
+							break;
+					}
 
-                    graphics.setFont(new Font("Arial", Font.BOLD, 20));
-                    Point pointShadow = new Point(textLoc.getX() + 1, textLoc.getY() + 1);
+					if (attackIcon == null)
+					{
+						return null;
+					}
 
-                    OverlayUtil.renderTextLocation(graphics, pointShadow, textOverlay, Color.BLACK);
-                    OverlayUtil.renderTextLocation(graphics, textLoc, textOverlay, Color.YELLOW);
+					Point imageLoc = Perspective.getCanvasImageLocation(client, point, attackIcon, boss.getLogicalHeight() / 2);
 
-                    graphics.setFont(oldFont);
-                }
+					if (imageLoc == null)
+					{
+						return null;
+					}
 
-                // Draws the graphics on the boss.
-                if (GauntletUtils.isBoss(npc)) {
+					graphics.drawImage(attackIcon, imageLoc.getX(), imageLoc.getY(), null);
+				}
 
-                    final LocalPoint point = npc.getLocalLocation();
+				if (plugin.isHighlightWidget())
+				{
+					if (hunllef.getCurrentPhase().getPrayer() != null)
+					{
+						Rectangle bounds = OverlayUtil.renderPrayerOverlay(graphics, client, hunllef.getCurrentPhase().getPrayer(), hunllef.getCurrentPhase().getPrayerColor());
+					}
+				}
 
-                    // Overlay the boss with a color on it's convex hull.
-                    if (config.overlayBoss()) {
-                        Polygon polygon = npc.getConvexHull();
+				// This section handles any text overlays.
+				String textOverlay = "";
 
-                        if (polygon != null) {
-                            Color color;
-                            switch (plugin.currentPhase) {
-                                case MAGIC:
-                                    color = Color.CYAN;
-                                    break;
-                                case RANGE:
-                                    color = Color.GREEN;
-                                    break;
-                                default:
-                                    color = Color.WHITE;
-                                    break;
-                            }
+				// Handles the counter for the boss.
+				if (plugin.isCountBossAttacks())
+				{
+					textOverlay = Integer.toString(hunllef.getBossAttacks());
+				}
 
-                            graphics.draw(polygon);
-                            graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
-                            graphics.fill(polygon);
-                        }
-                    }
+				// Handles the counter for the player.
+				if (plugin.isCountPlayerAttacks())
+				{
+					if (textOverlay.length() > 0)
+					{
+						textOverlay += " | ";
+					}
+					textOverlay += Integer.toString(hunllef.getPlayerAttacks());
+				}
 
-                    // Overlay of the boss with an icon denoting it's current attack style.
-                    if (config.overlayBossPrayer()) {
-                        BufferedImage attackIcon = null;
+				// Handles drawing the text onto the boss.
+				if (textOverlay.length() > 0)
+				{
+					Point textLoc = Perspective.getCanvasTextLocation(client, graphics, point, textOverlay, boss.getLogicalHeight() / 2);
 
-                        switch (plugin.currentPhase) {
-                            case MAGIC:
-                                attackIcon = plugin.imageAttackMage;
-                                break;
-                            case RANGE:
-                                attackIcon = plugin.imageAttackRange;
-                                break;
-                            default:
-                                break;
-                        }
+					if (textLoc == null)
+					{
+						return null;
+					}
 
-                        if (attackIcon != null) {
-                            Point imageLoc = Perspective.getCanvasImageLocation(client, point, attackIcon, npc.getLogicalHeight() / 2);
+					textLoc = new Point(textLoc.getX(), textLoc.getY() + 35);
 
-                            if (imageLoc == null)
-                                continue;
+					Font oldFont = graphics.getFont();
 
-                            graphics.drawImage(attackIcon, imageLoc.getX(), imageLoc.getY(), null);
-                        }
-                    }
+					graphics.setFont(new Font("Arial", Font.BOLD, 20));
+					Point pointShadow = new Point(textLoc.getX() + 1, textLoc.getY() + 1);
 
-                    // This section handles any text overlays.
-                    String textOverlay = "";
+					OverlayUtil.renderTextLocation(graphics, pointShadow, textOverlay, Color.BLACK);
+					OverlayUtil.renderTextLocation(graphics, textLoc, textOverlay, Color.CYAN);
 
-                    // Handles the counter for the boss.
-                    if (config.countBossAttacks()) {
-                        textOverlay = Integer.toString(plugin.bossCounter);
-                    }
+					graphics.setFont(oldFont);
+				}
+			}
+		}
+		else
+		{
+			// This section overlays all resources.
+			LocalPoint playerLocation = client.getLocalPlayer().getLocalLocation();
 
-                    // Handles the counter for the player.
-                    if (config.countPlayerAttacks()) {
-                        if (textOverlay.length() > 0)
-                            textOverlay += " | ";
-                        textOverlay += Integer.toString(plugin.playerCounter);
-                    }
+			Set<Resources> resources = plugin.getResources();
+			resources.forEach(object ->
+			{
+				if (object.getGameObject().getLocalLocation().distanceTo(playerLocation) < MAX_DISTANCE)
+				{
 
-                    // Handles drawing the text onto the boss.
-                    if (textOverlay.length() > 0) {
-                        Point textLoc = Perspective.getCanvasTextLocation(client, graphics, point, textOverlay, npc.getLogicalHeight() / 2);
+					// Don't use Convex Hull click box. As the room start to fill up, your FPS will dip.
+					Polygon polygon = object.getGameObject().getConvexHull();
 
-                        if (textLoc == null)
-                            continue;
+					if (polygon == null)
+					{
+						return;
+					}
+					// This section will highlight the resource with color.
+					if (plugin.isHighlightResources())
+					{
+						outlineRenderer.drawOutline(object.getGameObject(), 2, plugin.getHighlightResourcesColor());
+					}
 
-                        textLoc = new Point(textLoc.getX(), textLoc.getY() + 35);
+					// This section will overlay the resource with an icon.
+					if (plugin.isHighlightResourcesIcons())
+					{
+						BufferedImage icon = resizeImage(object.getImage(), plugin.getIconSize(), plugin.getIconSize());
+						Rectangle bounds = polygon.getBounds();
+						int startX = (int) bounds.getCenterX() - (icon.getWidth() / 2);
+						int startY = (int) bounds.getCenterY() - (icon.getHeight() / 2);
+						graphics.drawImage(icon, startX, startY, null);
+					}
+				}
+			});
+		}
+		return null;
+	}
 
-                        Font oldFont = graphics.getFont();
+	private Polygon boundProjectile(Projectile proj)
+	{
+		if (proj == null || proj.getModel() == null)
+		{
+			return null;
+		}
 
-                        graphics.setFont(new Font("Arial", Font.BOLD, 20));
-                        Point pointShadow = new Point(textLoc.getX() + 1, textLoc.getY() + 1);
+		Model model = proj.getModel();
+		LocalPoint point = new LocalPoint((int) proj.getX(), (int) proj.getY());
+		int tileHeight = Perspective.getTileHeight(client, point, client.getPlane());
 
-                        OverlayUtil.renderTextLocation(graphics, pointShadow, textOverlay, Color.BLACK);
-                        OverlayUtil.renderTextLocation(graphics, textLoc, textOverlay, Color.CYAN);
+		double angle = Math.atan(proj.getVelocityY() / proj.getVelocityX());
+		angle = Math.toDegrees(angle) + (proj.getVelocityX() < 0 ? 180 : 0);
+		angle = angle < 0 ? angle + 360 : angle;
+		angle = 360 - angle - 90;
 
-                        graphics.setFont(oldFont);
-                    }
-                }
-            }
-        } else {
-            // This section overlays all resources.
-            LocalPoint playerLocation = client.getLocalPlayer().getLocalLocation();
+		double ori = angle * (512d / 90d);
+		ori = ori < 0 ? ori + 2048 : ori;
 
-            for (GameObject object : plugin.resources.keySet()) {
-                Tile tile = plugin.resources.get(object);
-                if (tile.getPlane() == client.getPlane()
-                        && object.getLocalLocation().distanceTo(playerLocation) < MAX_DISTANCE) {
+		int orientation = (int) Math.round(ori);
 
-                    // Don't use Convex Hull click box. As the room start to fill up, your FPS will dip.
-                    Polygon polygon = object.getCanvasTilePoly();
+		List<Vertex> vertices = model.getVertices();
+		for (int i = 0; i < vertices.size(); ++i)
+		{
+			vertices.set(i, vertices.get(i).rotate(orientation));
+		}
 
-                    if (polygon != null) {
-                        // This section will highlight the resource with color.
-                        if (config.highlightResourcesColor()) {
-                            Color color = SystemColor.YELLOW;
+		List<Point> list = new ArrayList<>();
 
-                            graphics.setColor(color);
-                            graphics.draw(polygon);
-                            graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
-                            graphics.fill(polygon);
-                        }
+		for (Vertex vertex : vertices)
+		{
+			final Point localToCanvas = Perspective.localToCanvas(client, point.getX() - vertex.getX(), point.getY() - vertex.getZ(), tileHeight + vertex.getY() + (int) proj.getZ());
+			if (localToCanvas != null)
+			{
+				list.add(localToCanvas);
+			}
+		}
 
-                        // This section will overlay the resource with an icon.
-                        if (config.highlightResourcesIcons()) {
-                            int id = object.getId();
-                            BufferedImage icon = null;
+		final List<Point> convexHull = Jarvis.convexHull(list);
+		if (convexHull == null)
+		{
+			return null;
+		}
 
-                            if (GauntletUtils.arrayContainsInteger(GauntletUtils.CRYSTAL_DEPOSIT, id)) {
-                                icon = plugin.imageCrystalDeposit;
-                            } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.PHREN_ROOTS, id)) {
-                                icon = plugin.imagePhrenRoots;
-                            } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.FISHING_SPOTS, id)) {
-                                icon = plugin.imageFishingSpot;
-                            } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.GRYM_ROOTS, id)) {
-                                icon = plugin.imageGrymRoot;
-                            } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.LINUM_TIRINUM, id)) {
-                                icon = plugin.imageLinumTirinum;
-                            }
+		final Polygon polygon = new Polygon();
+		for (final Point hullPoint : convexHull)
+		{
+			polygon.addPoint(hullPoint.getX(), hullPoint.getY());
+		}
 
-                            if (icon != null) {
-                                Rectangle bounds = polygon.getBounds();
-                                int startX = (int) bounds.getCenterX() - (icon.getWidth() / 2);
-                                int startY = (int) bounds.getCenterY() - (icon.getHeight() / 2);
-                                graphics.drawImage(icon, startX, startY, null);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
+		return polygon;
+	}
 }
