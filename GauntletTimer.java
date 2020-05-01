@@ -51,7 +51,7 @@ class GauntletTimer extends Overlay {
     private final PanelComponent panelComponent = new PanelComponent();
 
     public enum RaidState {
-        UNKNOWN, IN_RAID, IN_BOSS;
+        UNKNOWN, IN_RAID, IN_BOSS
     }
 
     public long timeRaidStart = -1L;
@@ -72,7 +72,6 @@ class GauntletTimer extends Overlay {
     /**
      * This is called when the player resets the plugin mid-raid. We do not want to confuse the timer.
      * <p>
-     * TODO: Originally, this function will disable the timer if the plugin is started mid raid.
      * Unfortunately, VARBITS can't be checked unless you're on the client thread.
      * I've no idea how to access RL's task handler.
      * Good luck to you. If you restart plugin mid raid, oh well. Your timer's going to be inaccurate.

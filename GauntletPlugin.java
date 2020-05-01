@@ -21,10 +21,9 @@ import net.runelite.api.NPCComposition;
 import net.runelite.api.Player;
 import net.runelite.api.Projectile;
 import net.runelite.api.Skill;
-import net.runelite.api.SoundEffectID;
 import net.runelite.api.Tile;
 import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -78,11 +77,11 @@ public class GauntletPlugin extends Plugin {
     public int playerCounter = 6; // Attacks until the boss changes prayer.
 
     public enum BossAttackPhase {
-        MAGIC, RANGE, UNKNOWN;
+        MAGIC, RANGE, UNKNOWN
     }
 
     public enum BossAttack {
-        MAGIC, RANGE, PRAYER, LIGHTNING;
+        MAGIC, RANGE, PRAYER, LIGHTNING
     }
 
     @Inject
@@ -236,16 +235,6 @@ public class GauntletPlugin extends Plugin {
      * @param style BossAttack ; the attack performed by the boss
      */
     public void doAttack(BossAttack style) {
-        // Prayer attacks are magic related. We only care if it's prayer to play the unique sound.
-        // This section will change all PRAYER attacks to MAGIC.
-        if (style == BossAttack.PRAYER) {
-            if (config.uniquePrayerAudio()) {
-                client.playSoundEffect(SoundEffectID.MAGIC_SPLASH_BOING);
-            }
-
-            style = BossAttack.MAGIC;
-        }
-
         // This section will decrement the boss attack counter by 1.
         if (style == BossAttack.LIGHTNING) {
             bossCounter--;
@@ -257,6 +246,13 @@ public class GauntletPlugin extends Plugin {
                 bossCounter--;
             }
         } else if (style == BossAttack.MAGIC) {
+            if (currentPhase != BossAttackPhase.MAGIC) {
+                currentPhase = BossAttackPhase.MAGIC;
+                bossCounter = 3;
+            } else {
+                bossCounter--;
+            }
+        } else if (style == BossAttack.PRAYER) {
             if (currentPhase != BossAttackPhase.MAGIC) {
                 currentPhase = BossAttackPhase.MAGIC;
                 bossCounter = 3;

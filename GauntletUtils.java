@@ -1,18 +1,7 @@
 package net.runelite.client.plugins.gauntlet;
 
 import net.runelite.api.Client;
-import net.runelite.api.Model;
 import net.runelite.api.NPC;
-import net.runelite.api.Perspective;
-import net.runelite.api.Point;
-import net.runelite.api.Projectile;
-import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.model.Jarvis;
-import net.runelite.api.model.Vertex;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class GauntletUtils {
 
@@ -168,49 +157,5 @@ public class GauntletUtils {
         } catch (IndexOutOfBoundsException | NullPointerException ignored) {
             return false;
         }
-    }
-
-    public static Polygon boundProjectile(Client client, Projectile p) {
-        if (p == null || p.getModel() == null)
-            return null;
-
-        Model model = p.getModel();
-        LocalPoint point = new LocalPoint((int) p.getX(), (int) p.getY());
-        int tileHeight = Perspective.getTileHeight(client, point, client.getPlane());
-
-        double angle = Math.atan(p.getVelocityY() / p.getVelocityX());
-        angle = Math.toDegrees(angle) + (p.getVelocityX() < 0 ? 180 : 0);
-        angle = angle < 0 ? angle + 360 : angle;
-        angle = 360 - angle - 90;
-
-        double ori = angle * (512d / 90d);
-        ori = ori < 0 ? ori + 2048 : ori;
-
-        int orientation = (int) Math.round(ori);
-
-        List<Vertex> vertices = model.getVertices();
-        for (int i = 0; i < vertices.size(); ++i) {
-            vertices.set(i, vertices.get(i).rotate(orientation));
-        }
-
-        List<Point> list = new ArrayList<>();
-
-        for (final Vertex vertex : vertices) {
-            final Point localToCanvas = Perspective.localToCanvas(client, point.getX() - vertex.getX(), point.getY() - vertex.getZ(), tileHeight + vertex.getY() + (int) p.getZ());
-            if (localToCanvas != null) {
-                list.add(localToCanvas);
-            }
-        }
-
-        final List<Point> convexHull = Jarvis.convexHull(list);
-        if (convexHull == null)
-            return null;
-
-        final Polygon polygon = new Polygon();
-        for (final Point hullPoint : convexHull) {
-            polygon.addPoint(hullPoint.getX(), hullPoint.getY());
-        }
-
-        return polygon;
     }
 }

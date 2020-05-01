@@ -59,36 +59,6 @@ public interface GauntletConfig extends Config {
 
     @ConfigItem(
             position = 4,
-            keyName = "uniquePrayerAudio",
-            name = "Unique Prayer Audio",
-            description = "Plays a unique sound whenever the boss is about to shut down your prayer."
-    )
-    default boolean uniquePrayerAudio() {
-        return true;
-    }
-
-    @ConfigItem(
-            position = 5,
-            keyName = "uniquePrayerVisual",
-            name = "Unique Prayer Visual",
-            description = "Prayer attacks will have a unique overlay visual."
-    )
-    default boolean uniquePrayerVisual() {
-        return true;
-    }
-
-    @ConfigItem(
-            position = 6,
-            keyName = "uniqueAttackVisual",
-            name = "Unique Magic & Range Visuals",
-            description = "Magic and Range attacks will have a unique overlay visual."
-    )
-    default boolean uniqueAttackVisual() {
-        return false;
-    }
-
-    @ConfigItem(
-            position = 7,
             keyName = "overlayBoss",
             name = "Overlay the Boss (Color)",
             description = "Overlay the boss with an color denoting it's current attack style."
@@ -98,7 +68,7 @@ public interface GauntletConfig extends Config {
     }
 
     @ConfigItem(
-            position = 8,
+            position = 5,
             keyName = "overlayBossPrayer",
             name = "Overlay the Boss (Icon)",
             description = "Overlay the boss with an icon denoting it's current attack style."
@@ -108,7 +78,7 @@ public interface GauntletConfig extends Config {
     }
 
     @ConfigItem(
-            position = 9,
+            position = 6,
             keyName = "overlayTornadoes",
             name = "Show Tornado Decay",
             description = "Display the amount of ticks left until the tornadoes decay."
@@ -118,7 +88,7 @@ public interface GauntletConfig extends Config {
     }
 
     @ConfigItem(
-            position = 10,
+            position = 7,
             keyName = "displayTimerWidget",
             name = "Show Custom Timer (Widget)",
             description = "Display a timer widget that tracks your gauntlet progress."
@@ -128,7 +98,7 @@ public interface GauntletConfig extends Config {
     }
 
     @ConfigItem(
-            position = 11,
+            position = 8,
             keyName = "displayTimerChat",
             name = "Show Custom Timer (Chat)",
             description = "Display a chat message that tracks your gauntlet progress."
@@ -142,7 +112,7 @@ public interface GauntletConfig extends Config {
             max = 50
     )
     @ConfigItem(
-            position = 12,
+            position = 9,
             keyName = "iconSize",
             name = "Global Icon Size",
             description = "Globally change the size of icons. { Range: 1 to 50 }"

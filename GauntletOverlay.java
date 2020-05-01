@@ -13,7 +13,6 @@ import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
-import net.runelite.api.Projectile;
 import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.ui.overlay.Overlay;
@@ -52,52 +51,6 @@ public class GauntletOverlay extends Overlay {
             return null;
 
         if (GauntletUtils.inBoss(client)) { // This section handles the visuals when the player is in the boss room.
-            // This section handles the projectile overlays.
-            for (Projectile projectile : this.client.getProjectiles()) {
-                int id = projectile.getId();
-
-                BufferedImage icon = null;
-                Color color = null;
-
-                if (GauntletUtils.arrayContainsInteger(GauntletUtils.PROJECTILE_MAGIC, id) && config.uniqueAttackVisual()) {
-                    icon = plugin.imageAttackMage;
-                    color = Color.CYAN;
-                } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.PROJECTILE_RANGE, id) && config.uniqueAttackVisual()) {
-                    icon = plugin.imageAttackRange;
-                    color = Color.GREEN;
-                } else if (GauntletUtils.arrayContainsInteger(GauntletUtils.PROJECTILE_PRAYER, id) && config.uniquePrayerVisual()) {
-                    icon = plugin.imageAttackPrayer;
-                    color = Color.MAGENTA;
-                }
-
-                if (icon == null)
-                    continue;
-
-                Polygon polygon = GauntletUtils.boundProjectile(client, projectile);
-                if (polygon == null) {
-                    int x = (int) projectile.getX();
-                    int y = (int) projectile.getY();
-
-                    LocalPoint point = new LocalPoint(x, y);
-                    Point loc = Perspective.getCanvasImageLocation(client, point, icon, -(int) projectile.getZ());
-
-                    if (loc == null)
-                        continue;
-
-                    graphics.drawImage(icon, loc.getX(), loc.getY(), null);
-                } else {
-                    graphics.setColor(color);
-                    graphics.draw(polygon);
-                    graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
-                    graphics.fill(polygon);
-
-                    Rectangle bounds = polygon.getBounds();
-                    int x = (int) bounds.getCenterX() - (icon.getWidth() / 2);
-                    int y = (int) bounds.getCenterY() - (icon.getHeight() / 2);
-                    graphics.drawImage(icon, x, y, null);
-                }
-            }
-
             for (NPC npc : this.client.getNpcs()) {
                 // Draws graphics on tornadoes.
                 if (config.overlayTornadoes() && plugin.tornadoesActive && GauntletUtils.isTornado(npc)) {
@@ -126,7 +79,7 @@ public class GauntletOverlay extends Overlay {
 
                     // Overlay the boss with a color on it's convex hull.
                     if (config.overlayBoss()) {
-                        Polygon polygon = npc.getConvexHull();
+                        Polygon polygon = npc.getCanvasTilePoly(); //
 
                         if (polygon != null) {
                             Color color;
