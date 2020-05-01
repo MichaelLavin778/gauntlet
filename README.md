@@ -31,7 +31,7 @@ July 27, 2019 - Version 1.1 "Initial Plugin Release"
 ```
 
 ## Settings and Features:
-![alt text](https://www.260.loneliestmimikyu.com/GauntletFeatures.png)
+![alt text](http://260.loneliestmimikyu.com/GauntletFeatures.png)
 
 
 # Version 1.3.1
