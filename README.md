@@ -1,14 +1,17 @@
 # RuneLite Gauntlet Plugin
 **Author:** Yuri-chan (Nagi#0001)
 
-**Last Updated:** July 30, 2019
+**Edited:** MichaelLavin778
 
-**Disclaimer:** You will need to compile the classes yourself if you want to use the project.
+**Last Updated:** April 30, 2020
 
 **License:** WTFPL (https://en.wikipedia.org/wiki/WTFPL) - Everyone is permitted to copy and distribute.
 
 ## Major Changelog:
 ```
+April 30, 2020 - Version 1.3.1
++ Reworked files and cut features like prayer audio cue, etc.
+
 July 30, 2019 - Version 1.3
 + Instance Map
 
@@ -28,9 +31,15 @@ July 27, 2019 - Version 1.1 "Initial Plugin Release"
 ```
 
 ## Settings and Features:
-![alt text](https://www.kthisiscvpv.com/OFQRV156450711931fMT.png)
+![alt text](https://www.260.loneliestmimikyu.com/GauntletFeatures.png)
+
+
+# Version 1.3.1
+Reworked files to be able to run with regular runelite client. Also cut some features from previous version.
 
 # Version 1.3
+Features at Version 1.3
+![alt text](https://www.kthisiscvpv.com/OFQRV156450711931fMT.png)
 
 ## Show Map: 
 Show a live instance map as you travel around the map.
