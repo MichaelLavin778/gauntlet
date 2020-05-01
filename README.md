@@ -31,14 +31,13 @@ July 27, 2019 - Version 1.1 "Initial Plugin Release"
 ```
 
 ## Settings and Features:
-![alt text](http://260.loneliestmimikyu.com/GauntletFeatures.png =50%x50%)
+![alt text](http://260.loneliestmimikyu.com/GauntletFeatures.png =244x427)
 
 
 # Version 1.3.1
 Reworked files to be able to run with regular runelite client. Also cut some features from previous version.
 
 # Version 1.3
-Features at Version 1.3
 ![alt text](https://www.kthisiscvpv.com/OFQRV156450711931fMT.png)
 
 ## Show Map: 
